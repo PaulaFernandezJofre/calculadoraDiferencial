@@ -40,8 +40,8 @@ if tipo == "Derivada de orden n":
     orden = st.number_input("📏 Orden de la derivada", min_value=1, max_value=100, value=1, step=1)
 
 if tipo == "Extremos globales en un intervalo":
-    a = st.number_input("🔽 Límite inferior del intervalo", value=-5.0)
-    b = st.number_input("🔼 Límite superior del intervalo", value=5.0)
+    a = st.number_input("🔽 Límite inferior del intervalo", value=-5)
+    b = st.number_input("🔼 Límite superior del intervalo", value=5)
 
 # Cálculo
 if st.button("✅ Calcular"):
