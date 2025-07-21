@@ -120,26 +120,35 @@ if st.button("✅ Calcular"):
                     st.write(f"x = {pc} → Error al evaluar: {e}")
 
         elif tipo == "Extremos globales en un intervalo":
-            derivada = sp.diff(func, x)
+             derivada = sp.diff(func, x)
             try:
-                puntos_criticos = sp.solve(derivada, x)
-            except:
-                puntos_criticos = []
+              puntos_criticos = sp.solve(derivada, x)
+       except:
+        puntos_criticos = []
 
-            extremos = []
-            for pc in puntos_criticos:
-                if pc.is_real and a <= float(pc.evalf()) <= b:
-                    extremos.append(pc)
+    extremos = []
+    for pc in puntos_criticos:
+        if pc.is_real and a <= float(pc.evalf()) <= b:
+            extremos.append(pc)
 
-            extremos += [a, b]
-            extremos = list(set(extremos))
-            evaluaciones = [(float(p), float(func.subs(x, p).evalf())) for p in extremos]
+    extremos += [a, b]
+    extremos = list(set(extremos))
 
-            minimo = min(evaluaciones, key=lambda t: t[1])
-            maximo = max(evaluaciones, key=lambda t: t[1])
+    evaluaciones = []
+    for p in extremos:
+        val = func.subs(x, p).evalf()
+        if sp.im(val) == 0:
+            evaluaciones.append((float(p), float(val)))
 
-            st.success(f"🔻 Mínimo global: f({minimo[0]}) = {minimo[1]}")
-            st.success(f"🔺 Máximo global: f({maximo[0]}) = {maximo[1]}")
+    if len(evaluaciones) == 0:
+        st.warning("⚠️ No se pueden calcular los extremos: los valores evaluados no son reales.")
+    else:
+        minimo = min(evaluaciones, key=lambda t: t[1])
+        maximo = max(evaluaciones, key=lambda t: t[1])
+
+        st.success(f"🔻 Mínimo global: f({minimo[0]}) = {minimo[1]}")
+        st.success(f"🔺 Máximo global: f({maximo[0]}) = {maximo[1]}")
+
 
         # Gráfico
         st.subheader("📊 Gráfico de la función")
