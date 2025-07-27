@@ -7,12 +7,12 @@ from sympy import nsolve
 # Configuración
 st.set_page_config(page_title="Calculadora de Cálculo", layout="centered")
 st.title("🧮 Calculadora de Cálculo Diferencial")
-st.markdown("Ingresa tu función y selecciona el tipo de ejercicio que deseas resolver.")
+st.markdown("Ingresa la función y selecciona el tipo de ejercicio que deseas resolver.")
 
 # Variable simbólica
 x = sp.symbols('x')
 
-# Entrada de función
+# Entrada función
 func_str = st.text_input("✍️ Ingresa la función f(x):", value="sin(x)/x")
 try:
     func = sp.sympify(func_str)
@@ -20,7 +20,7 @@ except:
     st.error("⚠️ La función no es válida.")
     st.stop()
 
-# Tipos de cálculo
+# Tipo de cálculo
 tipo = st.selectbox("📌 ¿Qué quieres calcular?", [
     "Límite",
     "Derivada de orden n",
@@ -37,13 +37,24 @@ if tipo == "Límite":
     lado = st.selectbox("👉 Lado del límite", ["Ambos lados", "Por la izquierda", "Por la derecha"])
 
 if tipo == "Derivada de orden n":
-    orden = st.number_input("📏 Orden de la derivada", min_value=1, max_value=100, value=3, step=1)
+    orden = st.number_input("📏 Orden de la derivada", min_value=1, max_value=10, value=3, step=1)
 
 if tipo == "Extremos globales en un intervalo":
     a = st.number_input("🔽 Límite inferior del intervalo", value=-5.0)
     b = st.number_input("🔼 Límite superior del intervalo", value=5.0)
 
-# Cálculo principal
+def plot_complex_parts(x_vals, f_lambda, label_base, ax, color_real='blue', color_imag='orange', linestyle_real='-', linestyle_imag='--'):
+    y_vals = f_lambda(x_vals)
+    y_vals = np.where(np.isfinite(y_vals), y_vals, np.nan)
+    ax.plot(x_vals, y_vals.real, label=f"{label_base} Parte Real", color=color_real, linestyle=linestyle_real)
+    ax.plot(x_vals, y_vals.imag, label=f"{label_base} Parte Imaginaria", color=color_imag, linestyle=linestyle_imag)
+
+def mostrar_valor_comp(x):
+    if abs(x.imag) < 1e-8:
+        return f"{x.real:.6g}"
+    else:
+        return f"{x.real:.6g} + {x.imag:.6g}i"
+
 if st.button("✅ Calcular"):
     try:
         st.subheader("🔍 Resultado")
@@ -58,7 +69,6 @@ if st.button("✅ Calcular"):
             st.latex(f"\\lim_{{x \\to {punto}}} f(x) = {sp.latex(resultado)}")
 
         elif tipo == "Derivada de orden n":
-            # Derivadas secuenciales
             derivadas = [func]
             for i in range(1, int(orden)+1):
                 derivadas.append(sp.diff(derivadas[-1], x))
@@ -67,9 +77,7 @@ if st.button("✅ Calcular"):
             for i in range(1, len(derivadas)):
                 st.latex(f"f^{{({i})}}(x) = {sp.latex(derivadas[i])}")
 
-            # Graficar derivadas
-            st.subheader("📊 Gráfico de derivadas hasta orden n")
-
+            st.subheader("📊 Gráfico de derivadas hasta orden n (Parte Real e Imaginaria)")
             deriv_lambdas = []
             for d in derivadas:
                 try:
@@ -79,7 +87,6 @@ if st.button("✅ Calcular"):
 
             x_vals = np.linspace(-10, 10, 400)
             fig, ax = plt.subplots()
-
             colores = plt.cm.plasma(np.linspace(0, 1, len(deriv_lambdas)))
             estilos = ['-', '--', '-.', ':', (0, (3, 5, 1, 5))]
 
@@ -87,15 +94,8 @@ if st.button("✅ Calcular"):
                 if fdi is None:
                     continue
                 try:
-                    y_vals = fdi(x_vals)
-                    y_vals = np.where(np.isfinite(y_vals), y_vals, np.nan)
-                    etiqueta = f"f(x)" if i == 0 else f"f^{i}(x)"
-                    ax.plot(
-                        x_vals, y_vals,
-                        label=etiqueta,
-                        color=colores[i % len(colores)],
-                        linestyle=estilos[i % len(estilos)]
-                    )
+                    label_base = "f(x)" if i == 0 else f"f^{i}(x)"
+                    plot_complex_parts(x_vals, fdi, label_base, ax, color_real=colores[i][0:3], color_imag=colores[i][0:3])
                 except:
                     st.warning(f"⚠️ No se pudo graficar la derivada de orden {i}.")
 
@@ -121,8 +121,8 @@ if st.button("✅ Calcular"):
         elif tipo == "Puntos críticos y extremos locales":
             derivada_1 = sp.diff(func, x)
             derivada_2 = sp.diff(derivada_1, x)
-            puntos_criticos = []
 
+            puntos_criticos = []
             try:
                 puntos_criticos = sp.solve(derivada_1, x)
             except:
@@ -132,7 +132,7 @@ if st.button("✅ Calcular"):
                 for xi in iniciales:
                     try:
                         raiz = nsolve(derivada_1, x, xi)
-                        soluciones_aprox.append(float(raiz.evalf()))
+                        soluciones_aprox.append(complex(raiz.evalf()))
                     except:
                         continue
 
@@ -146,45 +146,141 @@ if st.button("✅ Calcular"):
             st.write("📍 Puntos críticos:")
             for pc in puntos_criticos:
                 try:
-                    valor = func.subs(x, pc).evalf()
-                    segunda_eval = derivada_2.subs(x, pc).evalf()
-                    if segunda_eval.is_real:
-                        if segunda_eval > 0:
+                    st.write(f"x = {mostrar_valor_comp(pc)}")
+                except:
+                    st.write(f"x = {pc}")
+
+            st.write("📍 Extremos locales:")
+            for pc in puntos_criticos:
+                try:
+                    valor = complex(func.subs(x, pc).evalf())
+                    segunda_eval = complex(derivada_2.subs(x, pc).evalf())
+                    tipo_ext = "Indeterminado"
+                    if abs(segunda_eval.imag) < 1e-8:
+                        if segunda_eval.real > 0:
                             tipo_ext = "mínimo local"
-                        elif segunda_eval < 0:
+                        elif segunda_eval.real < 0:
                             tipo_ext = "máximo local"
                         else:
                             tipo_ext = "punto de inflexión"
-                        st.write(f"x = {round(float(pc), 4)}, f(x) = {round(float(valor), 4)} → {tipo_ext}")
-                    else:
-                        st.write(f"x = {round(float(pc), 4)} → No se puede determinar la naturaleza.")
+                    st.write(f"x = {mostrar_valor_comp(pc)}, f(x) = {mostrar_valor_comp(valor)} → {tipo_ext}")
                 except Exception as e:
                     st.write(f"x = {pc} → Error al evaluar: {e}")
 
+            # Graficar función, primera y segunda derivada
+            f_lambda = sp.lambdify(x, func, modules=["numpy"])
+            d1_lambda = sp.lambdify(x, derivada_1, modules=["numpy"])
+            d2_lambda = sp.lambdify(x, derivada_2, modules=["numpy"])
+
+            x_vals = np.linspace(-10, 10, 400)
+            fig, ax = plt.subplots()
+
+            plot_complex_parts(x_vals, f_lambda, "f(x)", ax, color_real='blue', color_imag='cyan')
+            plot_complex_parts(x_vals, d1_lambda, "f'(x)", ax, color_real='red', color_imag='orange')
+            plot_complex_parts(x_vals, d2_lambda, "f''(x)", ax, color_real='green', color_imag='lime')
+
+            # Marcar puntos críticos (parte real)
+            for pc in puntos_criticos:
+                try:
+                    val = complex(func.subs(x, pc).evalf())
+                    ax.scatter(pc.real, val.real, color='black', marker='o', s=50, label="Punto crítico (parte real)")
+                except:
+                    pass
+
+            ax.axhline(0, color='gray', linewidth=1)
+            ax.axvline(0, color='gray', linewidth=1)
+            ax.set_title("Función y derivadas con puntos críticos (extremos locales)")
+            ax.legend()
+            ax.grid(True)
+            st.pyplot(fig)
+
         elif tipo == "Extremos globales en un intervalo":
-            derivada = sp.diff(func, x)
+            derivada_1 = sp.diff(func, x)
+            derivada_2 = sp.diff(derivada_1, x)
+
+            puntos_criticos = []
             try:
-                puntos_criticos = sp.solve(derivada, x)
+                puntos_criticos = sp.solve(derivada_1, x)
             except:
                 puntos_criticos = []
 
             extremos = []
             for pc in puntos_criticos:
-                if pc.is_real and a <= float(pc.evalf()) <= b:
-                    extremos.append(pc)
+                try:
+                    val_pc = complex(pc.evalf())
+                    if a <= val_pc.real <= b:
+                        extremos.append(val_pc)
+                except:
+                    continue
 
-            extremos += [a, b]
-            extremos = list(set(extremos))
-            evaluaciones = [(float(p), float(func.subs(x, p).evalf())) for p in extremos]
+            extremos += [complex(a), complex(b)]
+            # Eliminar duplicados aproximados
+            extremos = list({round(p.real, 8) + 1j*round(p.imag, 8) for p in extremos})
 
-            minimo = min(evaluaciones, key=lambda t: t[1])
-            maximo = max(evaluaciones, key=lambda t: t[1])
+            evaluaciones = []
+            for p in extremos:
+                try:
+                    val = complex(func.subs(x, p).evalf())
+                    evaluaciones.append((p, val))
+                except:
+                    pass
 
-            st.success(f"🔻 Mínimo global: f({minimo[0]}) = {minimo[1]}")
-            st.success(f"🔺 Máximo global: f({maximo[0]}) = {maximo[1]}")
+            if evaluaciones:
+                st.write("📍 Evaluación en puntos candidatos a extremos globales:")
+                for p, v in evaluaciones:
+                    st.write(f"x = {mostrar_valor_comp(p)}, f(x) = {mostrar_valor_comp(v)}")
 
-        # Gráfico general (excepto en derivadas que ya se grafican arriba)
-        if tipo != "Derivada de orden n":
+                minimo = min(evaluaciones, key=lambda t: (t[1].real, abs(t[1].imag)))
+                maximo = max(evaluaciones, key=lambda t: (t[1].real, abs(t[1].imag)))
+
+                st.success(f"🔻 Mínimo global estimado: f({mostrar_valor_comp(minimo[0])}) = {mostrar_valor_comp(minimo[1])}")
+                st.success(f"🔺 Máximo global estimado: f({mostrar_valor_comp(maximo[0])}) = {mostrar_valor_comp(maximo[1])}")
+
+                st.write("📍 Extremos globales:")
+
+                for p, v in evaluaciones:
+                    tipo_ext = "Indeterminado"
+                    try:
+                        segunda_eval = complex(derivada_2.subs(x, p).evalf())
+                        if abs(segunda_eval.imag) < 1e-8:
+                            if segunda_eval.real > 0:
+                                tipo_ext = "mínimo global"
+                            elif segunda_eval.real < 0:
+                                tipo_ext = "máximo global"
+                            else:
+                                tipo_ext = "punto de inflexión"
+                    except:
+                        pass
+                    st.write(f"x = {mostrar_valor_comp(p)}, f(x) = {mostrar_valor_comp(v)} → {tipo_ext}")
+
+                # Graficar función, primera y segunda derivada en el intervalo
+                f_lambda = sp.lambdify(x, func, modules=["numpy"])
+                d1_lambda = sp.lambdify(x, derivada_1, modules=["numpy"])
+                d2_lambda = sp.lambdify(x, derivada_2, modules=["numpy"])
+
+                x_vals = np.linspace(a, b, 400)
+                fig, ax = plt.subplots()
+
+                plot_complex_parts(x_vals, f_lambda, "f(x)", ax, color_real='blue', color_imag='cyan')
+                plot_complex_parts(x_vals, d1_lambda, "f'(x)", ax, color_real='red', color_imag='orange')
+                plot_complex_parts(x_vals, d2_lambda, "f''(x)", ax, color_real='green', color_imag='lime')
+
+                # Marcar extremos globales (parte real)
+                for p, v in evaluaciones:
+                    ax.scatter(p.real, v.real, color='black', marker='x', s=60, label="Extremo global (parte real)")
+
+                ax.axhline(0, color='gray', linewidth=1)
+                ax.axvline(0, color='gray', linewidth=1)
+                ax.set_title(f"Función y derivadas en el intervalo [{a}, {b}] con extremos globales")
+                ax.legend()
+                ax.grid(True)
+                st.pyplot(fig)
+
+            else:
+                st.warning("⚠️ No se encontraron extremos globales reales o complejos evaluables en el intervalo.")
+
+        else:
+            # Gráfico general para otros casos, si aplica
             st.subheader("📊 Gráfico de la función")
             f_lamb = sp.lambdify(x, func, modules=["numpy"])
             x_vals = np.linspace(-10, 10, 400)
