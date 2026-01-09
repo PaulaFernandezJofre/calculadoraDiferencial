@@ -5,8 +5,8 @@ import numpy as np
 from sympy import nsolve
 
 # Configuración
-st.set_page_config(page_title="Calculadora de Cálculo", layout="centered")
-st.title("🧮 Calculadora de Cálculo Diferencial")
+st.set_page_config(page_title="Cálculo I", layout="centered")
+st.title("🧮 Cálculo Diferencial")
 st.markdown("Ingresa la función y selecciona el tipo de ejercicio que deseas resolver.")
 
 # Variable simbólica
@@ -299,3 +299,4 @@ if st.button("✅ Calcular"):
 
     except Exception as e:
         st.error(f"Ocurrió un error: {e}")
+
