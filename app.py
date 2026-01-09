@@ -9,7 +9,7 @@ st.set_page_config(
     layout="centered"
 )
 
-st.title("🧮 Calculadora de Cálculo Diferencial")
+st.title("🧮 Cálculo Diferencial")
 st.markdown("Aplicación académica de análisis real (nivel universitario).")
 
 # ---------------- SÍMBOLOS ----------------
@@ -166,3 +166,4 @@ if st.button("✅ Calcular"):
 
     except Exception as e:
         st.error(f"Error en el cálculo: {e}")
+
